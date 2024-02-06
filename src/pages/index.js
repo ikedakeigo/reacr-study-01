@@ -1,92 +1,118 @@
 import { useState } from "react";
 
-function Square({ value, onSquareClick }) {
+function FilterableProductTable({ products }) {
+  const [filterText, setFilterText] = useState("");
+  const [inStockOnly, setInStockOnly] = useState(false);
+
   return (
-    <button className="square" onClick={onSquareClick}>
-      {value}
-    </button>
+    <div>
+      <SearchBar
+       filterText={filterText}
+       inStockOnly={inStockOnly}
+       onFilterTextChange={setFilterText}
+       onInStockChange={setInStockOnly}
+       />
+
+      <ProductTable
+      products={products}
+      filterText={filterText}
+      inStockOnly={inStockOnly} />
+    </div>
   );
 }
 
-export default function Board({ title }) {
-  const [xIsNext, setXIsNext] = useState(true);
-  const [squares, setSquares] = useState(Array(9).fill(null));
 
-  function handleClick(i) {
-    if (squares[i] || calculateWinner(squares)) {
+function ProductCategoryRow({ category }) {
+  return (
+    <tr>
+      <th colSpan="2">{category}</th>
+    </tr>
+  );
+}
+
+function ProductRow({ product }) {
+  const name = product.stocked ? product.name : <span style={{ color: "red" }}>{product.name}</span>;
+
+  return (
+    <tr>
+      <td>{name}</td>
+      <td>{product.price}</td>
+    </tr>
+  );
+}
+
+function ProductTable({ products, filterText, inStockOnly }) {
+  const rows = [];
+  let lastCategory = null;
+
+  products.forEach((product) => {
+    if (product.name.toLowerCase().indexOf(filterText.toLowerCase()) === -1) {
       return;
     }
-    const nextSquares = squares.slice();
-    if (xIsNext) {
-      nextSquares[i] = "X";
-    } else {
-      nextSquares[i] = "O";
+    if (product.category !== lastCategory) {
+      rows.push(<ProductCategoryRow category={product.category} key={product.category} />);
     }
-    setSquares(nextSquares);
-    setXIsNext(!xIsNext);
-  }
+    rows.push(
+    <ProductRow
+    product={product}
+    key={product.name} />
+    );
+    lastCategory = product.category;
+  });
 
-  const winner = calculateWinner(squares);
-  let status;
-  if (winner) {
-    status = "Winner:" + winner;
-  } else {
-    status = "Next player: " + (xIsNext ? "X" : "O");
-  }
   return (
-    <>
-      <h2>三目並べのゲーム</h2>
-      {/* <div className="board-row">
-        <button className="square">1</button>
-        <button className="square">2</button>
-        <button className="square">3</button>
-      </div>
-      <div className="board-row">
-        <button className="square">4</button>
-        <button className="square">5</button>
-        <button className="square">6</button>
-      </div>
-      <div className="board-row">
-        <button className="square">7</button>
-        <button className="square">8</button>
-        <button className="square">9</button>
-      </div> */}
-      <div className="status">{status}</div>
-      <div className="board-row">
-        <Square value={squares[0]} onSquareClick={() => handleClick(0)} />
-        <Square value={squares[1]} onSquareClick={() => handleClick(1)} />
-        <Square value={squares[2]} onSquareClick={() => handleClick(2)} />
-      </div>
-      <div className="board-row">
-        <Square value={squares[3]} onSquareClick={() => handleClick(3)} />
-        <Square value={squares[4]} onSquareClick={() => handleClick(4)} />
-        <Square value={squares[5]} onSquareClick={() => handleClick(5)} />
-      </div>
-      <div className="board-row">
-        <Square value={squares[6]} onSquareClick={() => handleClick(6)} />
-        <Square value={squares[7]} onSquareClick={() => handleClick(7)} />
-        <Square value={squares[8]} onSquareClick={() => handleClick(8)} />
-      </div>
-    </>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Price</th>
+        </tr>
+      </thead>
+      <tbody>{rows}</tbody>
+    </table>
   );
 }
 
-function calculateWinner(squares) {
-  const lines = [
-    [0, 1, 2],
-    [3, 4, 5],
-    [6, 7, 8],
-    [0, 3, 6],
-    [1, 4, 7],
-    [2, 5, 8],
-    [0, 4, 8],
-    [2, 4, 6],
-  ];
-  for (let i = 0; i < lines.length; i++) {
-    const [a, b, c] = lines[i];
-    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-      return squares[a];
-    }
-  }
-  return null;
+function SearchBar({
+  filterText,
+  inStockOnly,
+  onFilterTextChange,
+  onInStockChange
+}) {
+  return (
+    <form>
+      <input
+      type="text"
+      value={filterText}
+      placeholder="Search.."
+      onChange={(e) => onFilterTextChange(e.target.value)}
+      />
+      <label>
+        <input
+        type="checkbox"
+        checked={inStockOnly}
+        onChange={(e) => onInStockChange(e.target.checked)}
+        />
+        {""}
+        only show products in stock
+        （在庫のある商品のみを表示します）
+      </label>
+    </form>
+  );
 }
+
+
+const PRODUCTS = [
+  { category: "Frutis", price: "$1", stocked: true, name: "Apple" },
+  { category: "Frutis", price: "$2", stocked: false, name: "Banana" },
+  { category: "Vegetables", price: "$3", stocked: true, name: "Carrot" },
+  { category: "Vegetables", price: "$4", stocked: false, name: "Daikon" },
+];
+
+export default function App() {
+  return <FilterableProductTable products={PRODUCTS} />;
+}
+
+
+
+// propsとstateの違い
